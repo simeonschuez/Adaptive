@@ -1,2 +1,7 @@
 data/coco_splits.json
+data/vocab.pkl
+data/annotations/*
+data/resized/*
 annotations/*
+.coco/*
+*__pycache__*

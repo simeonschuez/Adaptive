@@ -97,7 +97,7 @@ if __name__ == '__main__':
 
     parser.add_argument(
         '--out_dir', type=str, help='directory for output data',
-        default='./annotations'
+        default='./data/annotations'
     )
 
     args = parser.parse_args()
