@@ -131,21 +131,23 @@ def main(args):
 
             # Start CNN fine-tuning
             if epoch > args.cnn_epoch:
-
                 cnn_optimizer.step()
+
 
             # Print log info
             if i % args.log_step == 0:
-                print('Epoch [%d/%d], Step [%d/%d], CrossEntropy Loss: %.4f, Perplexity: %5.4f'%(epoch,
+                print('Epoch {0}/{1}, Step {2}/{3}'.format(epoch,
                                                                                                  args.num_epochs,
-                                                                                                 i, total_step,
-                                                                                                 loss.item(),
-                                                                                                 np.exp(loss.item())))
+                                                           i,
+                                                           total_step),
+                      end=" ")
+                print('CrossEntropy Loss: {0}, Perplexity: {1}'.format(
+                    loss.item(), np.exp(loss.item())))
 
         # Save the Adaptive Attention model after each epoch
+        print("Save Torch model ...")
         torch.save(adaptive.state_dict(),
-                    os.path.join(args.model_path,
-                    'adaptive-%d.pkl'%(epoch)))
+                   os.path.join(args.model_path, 'adaptive-%d.pkl'%(epoch)))
 
 
         # Evaluation on validation set
