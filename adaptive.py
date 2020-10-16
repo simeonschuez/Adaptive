@@ -314,6 +314,25 @@ class Encoder2Decoder(nn.Module):
 
         return packed_scores
 
+    def init_sampler(self, images):
+
+        # Data parallelism if multiple GPUs
+        if torch.cuda.device_count() > 1:
+            device_ids = range(torch.cuda.device_count())
+            encoder_parallel = torch.nn.DataParallel(self.encoder, device_ids=device_ids)
+            V, v_g = encoder_parallel(images)
+        else:
+            V, v_g = self.encoder(images)
+
+        # Build the starting token Variable <start> (index 1): B x 1
+        if torch.cuda.is_available():
+            captions = Variable(torch.LongTensor(images.size(0), 1).fill_(1).cuda())
+        else:
+            captions = Variable(torch.LongTensor(images.size(0), 1).fill_(1))
+
+        return V, v_g, captions
+
+
     # Caption generator
     def sampler(self, images, max_len=20):
         """

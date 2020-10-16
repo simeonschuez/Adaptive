@@ -188,7 +188,7 @@ def coco_eval(model, args, epoch):
     print('-----------Evaluation performance on MS-COCO validation dataset for Epoch %d----------'%(epoch))
     for metric, score in cocoEval.eval.items():
 
-        print('%s: %.4f'%(metric, score))
+        #print('%s: %.4f'%(metric, score))
         if metric == 'CIDEr':
             cider = score
 

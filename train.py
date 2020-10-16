@@ -13,10 +13,15 @@ from build_vocab import Vocabulary
 from torch.autograd import Variable
 from torchvision import transforms
 from torch.nn.utils.rnn import pack_padded_sequence
+import logging
 
 
 def main(args):
 
+    # set up logging
+    log_file = os.path.join(args.model_path, 'model_training.log')
+    logging.basicConfig(
+        filename=log_file, level=logging.DEBUG)
     # To reproduce training results
     torch.manual_seed(args.seed)
     if torch.cuda.is_available():
@@ -152,6 +157,19 @@ def main(args):
 
         # Evaluation on validation set
         cider = coco_eval(adaptive, args, epoch)
+
+        logging.debug(
+            """Epoch {}
+
+            crossEntropyLoss\t{}
+            Perplexity\t\t{}
+            CIDer\t\t{}
+
+            #####################
+
+            """.format(epoch, loss.item(), np.exp(loss.item()), cider)
+            )
+
         cider_scores.append(cider)
 
         if cider > best_cider:
