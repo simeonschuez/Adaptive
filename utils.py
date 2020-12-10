@@ -100,7 +100,7 @@ class CocoEvalLoader(datasets.ImageFolder):
         return img, img_id, filename
 
 # MSCOCO Evaluation function
-def coco_eval(model, args, epoch):
+def coco_eval(model, eval_data_loader, vocab, args, epoch):
 
     '''
     model: trained model to be evaluated
@@ -110,28 +110,11 @@ def coco_eval(model, args, epoch):
 
     model.eval()
 
-    # Validation images are required to be resized to 224x224 already
-    transform = transforms.Compose([
-        transforms.Scale((args.crop_size, args.crop_size)),
-        transforms.ToTensor(),
-        transforms.Normalize((0.485, 0.456, 0.406),
-                             (0.229, 0.224, 0.225))])
-
-    # Load the vocabulary
-    with open(args.vocab_path, 'rb') as f:
-         vocab = pickle.load(f)
-
-    # Wrapper the COCO VAL dataset
-    eval_data_loader = torch.utils.data.DataLoader(
-        CocoEvalLoader(args.image_dir, args.caption_val_path, transform),
-        batch_size = args.eval_size,
-        shuffle = False, num_workers = args.num_workers,
-        drop_last = False)
-
     # Generated captions to be compared with GT
     results = []
     print('---------------------Start evaluation on MS-COCO dataset-----------------------')
-    for i, (images, image_ids, _) in enumerate(eval_data_loader):
+    
+    for i, (images, _, _, image_ids, _) in enumerate(eval_data_loader):
 
         images = to_var(images)
         generated_captions, _, _ = model.sampler(images)

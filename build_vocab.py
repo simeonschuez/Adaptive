@@ -1,9 +1,10 @@
 import nltk
 import pickle
-import argparse
 from collections import Counter
-from coco.pycocotools.coco import COCO
+import string
+import os
 
+from data_utils import get_karpathy_split, get_refcoco_captions
 
 class Vocabulary(object):
     """Simple vocabulary wrapper."""
@@ -11,6 +12,7 @@ class Vocabulary(object):
         self.word2idx = {}
         self.idx2word = {}
         self.idx = 0
+        self.unknown_token = '<unk>'
 
     def add_word(self, word):
         if not word in self.word2idx:
@@ -20,58 +22,73 @@ class Vocabulary(object):
 
     def __call__(self, word):
         if not word in self.word2idx:
-            return self.word2idx['<unk>']
+            return self.word2idx[self.unknown_token]
         return self.word2idx[word]
 
     def __len__(self):
         return len(self.word2idx)
 
-def build_vocab(json, threshold):
+
+def build_vocab(caption_list, threshold):
     """Build a simple vocabulary wrapper."""
-    coco = COCO(json)
-    counter = Counter()
-    ids = coco.anns.keys()
-    for i, id in enumerate(ids):
-        caption = str(coco.anns[id]['caption'])
-        tokens = nltk.tokenize.word_tokenize(caption.lower())
-        counter.update(tokens)
 
-        if i % 1000 == 0:
-            print("[%d/%d] Tokenized the captions." %(i, len(ids)))
-
-    # If the word frequency is less than 'threshold', then the word is discarded.
-    words = [word for word, cnt in counter.items() if cnt >= threshold]
-
-    # Creates a vocab wrapper and add some special tokens.
     vocab = Vocabulary()
+
     vocab.add_word('<pad>')
     vocab.add_word('<start>')
     vocab.add_word('<end>')
-    vocab.add_word('<unk>')
+    vocab.add_word(vocab.unknown_token)
 
-    # Adds the words to the vocabulary.
-    for i, word in enumerate(words):
-        vocab.add_word(word)
+    tokens = []
+    for c in caption_list:
+        c = c.casefold()
+        c = c.translate(str.maketrans('', '', string.punctuation))
+        tokens += nltk.word_tokenize(c)
+
+    counter = Counter(tokens)
+
+    words = [w for w, cnt in counter.items() if cnt >= threshold]
+
+    for w in words:
+        vocab.add_word(w)
+
     return vocab
 
-def main(args):
-    vocab = build_vocab(json=args.caption_path,
-                        threshold=args.threshold)
-    vocab_path = args.vocab_path
-    with open(vocab_path, 'wb') as f:
+
+def main(coco_threshold, refcoco_threshold, splits_path, caps_path, refcoco_path, out_dir):
+
+    # create vocab directory if it doesn't exist
+    if not os.path.isdir(out_dir):
+        print('create vocab directory: {}'.format(out_dir))
+        os.makedirs(out_dir)
+
+    print('generate vocab for coco captions')
+
+    caps_df = get_karpathy_split(splits_path=splits_path, caps_path=caps_path)
+    train_caps = caps_df.loc[caps_df.split == 'train'].caption.to_list()
+    vocab = build_vocab(train_caps, coco_threshold)
+    out_path = os.path.join(out_dir, 'coco_vocab.pkl')
+    with open(out_path, 'wb') as f:
         pickle.dump(vocab, f)
-    print("Total vocabulary size: %d" %len(vocab))
-    print("Saved the vocabulary wrapper to '%s'" %vocab_path)
+        print('saved vocab with size {} to {}.'.format(len(vocab), out_path))
+
+    print('generate vocab for refcoco')
+    reg_df = get_refcoco_captions(refcoco_path)
+    train_caps = reg_df.loc[reg_df.split == 'train'].caption.to_list()
+    vocab = build_vocab(train_caps, refcoco_threshold)
+    out_path = os.path.join(out_dir, 'refcoco_vocab.pkl')
+    with open(out_path, 'wb') as f:
+        pickle.dump(vocab, f)
+        print('saved vocab with size {} to {}.'.format(len(vocab), out_path))
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--caption_path', type=str, 
-                        default='./data/annotations/karpathy_split_train.json', 
-                        help='path for train annotation file')
-    parser.add_argument('--vocab_path', type=str, default='./data/vocab.pkl', 
-                        help='path for saving vocabulary wrapper')
-    parser.add_argument('--threshold', type=int, default=5, 
-                        help='minimum word count threshold')
-    args = parser.parse_args()
-    main(args)
+
+    main(
+        coco_threshold=5,
+        refcoco_threshold=3,
+        splits_path='/home/simeon/Dokumente/Code/Data/COCO/splits/karpathy/caption_datasets/',
+        caps_path='/home/simeon/Dokumente/Code/Data/COCO/',
+        refcoco_path='/home/simeon/Dokumente/Code/Data/RefCOCO/refcoco/',
+        out_dir='/home/simeon/Dokumente/Code/Uni/Repos/Adaptive/data/'
+    )

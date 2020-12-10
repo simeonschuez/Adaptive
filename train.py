@@ -7,7 +7,9 @@ import numpy as np
 import os
 import pickle
 from utils import coco_eval, to_var
-from data_loader import get_loader
+from data_loader import get_caption_loader as get_loader
+from data_loader import COCOCaptionDataset
+from data_utils import get_karpathy_split
 from adaptive import Encoder2Decoder
 from build_vocab import Vocabulary
 from torch.autograd import Variable
@@ -34,7 +36,7 @@ def main(args):
     # Image Preprocessing
     # For normalization, see https://github.com/pytorch/vision#models
     transform = transforms.Compose([
-        transforms.RandomCrop(args.crop_size),
+        transforms.Resize((args.crop_size, args.crop_size)),
         transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
         transforms.Normalize((0.485, 0.456, 0.406),
@@ -44,10 +46,38 @@ def main(args):
     with open(args.vocab_path, 'rb') as f:
         vocab = pickle.load(f)
 
-    # Build training data loader
-    data_loader = get_loader(args.image_dir, args.caption_path, vocab,
-                              transform, args.batch_size,
-                              shuffle=True, num_workers=args.num_workers)
+    # Build data loader for training and evaluation
+
+    caps_df = get_karpathy_split(
+        splits_path=args.splits_path,
+        caps_path=args.caption_path
+        )
+
+    data_loader = get_loader(
+        decoding_level='word',
+        split=['train', 'restval'],
+        data_df=caps_df,
+        image_dir=args.image_dir,
+        vocab=vocab,
+        transform=transform,
+        batch_size=args.batch_size,
+        shuffle=True,
+        num_workers=args.num_workers,
+        drop_last=False
+    )
+
+    eval_loader = get_loader(
+        decoding_level='word',
+        split='val',
+        data_df=caps_df.groupby('image_id').agg('first').reset_index(),
+        image_dir=args.image_dir,
+        vocab=vocab,
+        transform=transform,
+        batch_size=args.batch_size,
+        shuffle=True,
+        num_workers=args.num_workers,
+        drop_last=False
+    )
 
     # Load pretrained model or build from scratch
     adaptive = Encoder2Decoder(args.embed_size, len(vocab), args.hidden_size)
@@ -141,10 +171,11 @@ def main(args):
 
             # Print log info
             if i % args.log_step == 0:
-                print('Epoch {0}/{1}, Step {2}/{3}'.format(epoch,
-                                                                                                 args.num_epochs,
-                                                           i,
-                                                           total_step),
+                print('Epoch {0}/{1}, Step {2}/{3}'.format(
+                                                        epoch,
+                                                        args.num_epochs,
+                                                        i,
+                                                        total_step),
                       end=" ")
                 print('CrossEntropy Loss: {0}, Perplexity: {1}'.format(
                     loss.item(), np.exp(loss.item())))
@@ -156,7 +187,7 @@ def main(args):
 
 
         # Evaluation on validation set
-        cider = coco_eval(adaptive, args, epoch)
+        cider = coco_eval(adaptive, eval_loader, vocab, args, epoch)
 
         logging.debug(
             """Epoch {}
@@ -197,16 +228,16 @@ if __name__ == '__main__':
                          help='path for saving trained models')
     parser.add_argument('--crop_size', type=int, default=224 ,
                         help='size for randomly cropping images')
-    parser.add_argument('--vocab_path', type=str, default='./data/vocab.pkl',
+    parser.add_argument('--vocab_path', type=str, default='./data/coco_vocab.pkl',
                         help='path for vocabulary wrapper')
-    parser.add_argument('--image_dir', type=str, default='./data/resized' ,
-                        help='directory for resized training images')
+    parser.add_argument('--image_dir', type=str, default='/home/simeon/Dokumente/Code/Data/COCO/',
+                        help='directory for training images')
     parser.add_argument('--caption_path', type=str,
-                        default='./data/annotations/karpathy_split_train.json',
-                        help='path for train annotation json file')
-    parser.add_argument('--caption_val_path', type=str,
-                        default='./data/annotations/karpathy_split_val.json',
-                        help='path for validation annotation json file')
+                        default='/home/simeon/Dokumente/Code/Data/COCO/',
+                        help='path for caption annotations')
+    parser.add_argument('--splits_path', type=str,
+                        default='/home/simeon/Dokumente/Code/Data/COCO/splits/karpathy/caption_datasets/',
+                        help='path to karpathy splits')
     parser.add_argument('--log_step', type=int, default=10,
                         help='step size for printing log info')
     parser.add_argument('--seed', type=int, default=123,
