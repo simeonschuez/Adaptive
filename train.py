@@ -8,7 +8,6 @@ import os
 import pickle
 from utils import coco_eval, to_var
 from data_loader import get_caption_loader as get_loader
-from data_loader import COCOCaptionDataset
 from data_utils import get_karpathy_split
 from adaptive import Encoder2Decoder
 from build_vocab import Vocabulary
@@ -68,12 +67,12 @@ def main(args):
 
     eval_loader = get_loader(
         decoding_level='word',
-        split='val',
+        split=['val'],
         data_df=caps_df.groupby('image_id').agg('first').reset_index(),
         image_dir=args.image_dir,
         vocab=vocab,
         transform=transform,
-        batch_size=args.batch_size,
+        batch_size=args.eval_size,
         shuffle=True,
         num_workers=args.num_workers,
         drop_last=False
@@ -238,6 +237,9 @@ if __name__ == '__main__':
     parser.add_argument('--splits_path', type=str,
                         default='/home/simeon/Dokumente/Code/Data/COCO/splits/karpathy/caption_datasets/',
                         help='path to karpathy splits')
+    parser.add_argument('--caption_val_path', type=str,
+                        default='./data/annotations/karpathy_split_val.json',
+                        help='path for validation annotation json file')
     parser.add_argument('--log_step', type=int, default=10,
                         help='step size for printing log info')
     parser.add_argument('--seed', type=int, default=123,
