@@ -61,10 +61,6 @@ def eval_captioning_model(model, vocab, eval_data_loader, eval_df):
                 ].caption.map(str.strip).to_list()
             references.append(refs)
 
-
-    print('hypotheses:', hypotheses, len(hypotheses))
-    print('references:', references, len(references))
-
     metrics_dict = nlgeval.compute_metrics(references, hypotheses)
     cider = metrics_dict['CIDEr']
 
@@ -108,8 +104,6 @@ def eval_reg_model(model, vocab, eval_data_loader, eval_df):
                     sampled_caption.append(word)
 
             sentence = ' '.join(sampled_caption)
-
-            #temp = {'ann_id': ann_id, 'caption': sentence}
             hypotheses.append(sentence)
 
             refs = eval_df.loc[eval_df.ann_id == ann_id].caption.to_list()
