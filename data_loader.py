@@ -109,6 +109,7 @@ class RefCOCODataset(DSet):
         # select sample
         ID = self.list_IDs[index]
         entry = self.df.loc[ID]
+        ann_id = entry.ann_id
 
         # get image filename
         img_path = os.path.join(
@@ -137,7 +138,7 @@ class RefCOCODataset(DSet):
 
         target_len = len(target)
 
-        return image, target, pos_features, target_len
+        return image, target, pos_features, target_len, ann_id, img_path
 
 
 ##############################
@@ -187,9 +188,12 @@ def reg_collate_fn(data):
     """
     # same stuff as in captions_collate_fn
     data.sort(key=lambda x: len(x[1]), reverse=True)
-    images, captions, pos_features, _ = zip(*data)
+
+    images, captions, pos_features, lengths, ann_ids, filenames = zip(*data)
 
     images = torch.stack(images, 0)
+    ann_ids = list(ann_ids)
+    filenames = list(filenames)
 
     lengths = [len(cap) for cap in captions]
     lengths = torch.LongTensor(lengths).unsqueeze(1)
@@ -202,7 +206,7 @@ def reg_collate_fn(data):
     # collate position information data
     positions = torch.stack(pos_features, 0)
 
-    return images, targets, positions, lengths
+    return images, targets, positions, lengths, ann_ids, filenames
 
 
 #######################
