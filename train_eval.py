@@ -1,3 +1,8 @@
+import sys
+import os
+dir_path = os.path.dirname(os.path.realpath(__file__))
+sys.path.append(os.path.join(dir_path, 'nlg-eval'))
+
 from nlgeval import NLGEval
 from torch.autograd import Variable
 import torch
@@ -12,10 +17,9 @@ def to_var(x, volatile=False):
     return Variable(x, volatile=volatile)
 
 
-def eval_captioning_model(model, vocab, eval_data_loader):
+def eval_captioning_model(model, vocab, eval_data_loader, eval_df):
 
     nlgeval = NLGEval(no_skipthoughts=True, no_glove=True)  # loads the models
-    eval_df = eval_data_loader.dataset.df
 
     model.eval()
     # Generated captions to be compared with GT
@@ -52,8 +56,14 @@ def eval_captioning_model(model, vocab, eval_data_loader):
             sentence = ' '.join(sampled_caption)
             hypotheses.append(sentence)
 
-            refs = eval_df.loc[eval_df.image_id == img_id].caption.to_list()
+            refs = eval_df.loc[
+                    eval_df.image_id == img_id
+                ].caption.map(str.strip).to_list()
             references.append(refs)
+
+
+    print('hypotheses:', hypotheses, len(hypotheses))
+    print('references:', references, len(references))
 
     metrics_dict = nlgeval.compute_metrics(references, hypotheses)
     cider = metrics_dict['CIDEr']
@@ -61,10 +71,9 @@ def eval_captioning_model(model, vocab, eval_data_loader):
     return cider
 
 
-def eval_reg_model(model, vocab, eval_data_loader):
+def eval_reg_model(model, vocab, eval_data_loader, eval_df):
 
     nlgeval = NLGEval(no_skipthoughts=True, no_glove=True)  # loads the models
-    eval_df = eval_data_loader.dataset.df
 
     model.eval()
     # Generated captions to be compared with GT
