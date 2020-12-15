@@ -56,7 +56,7 @@ def main(args):
     data_loader = get_loader(
         decoding_level='word',
         split=['train', 'restval'],
-        data_df=caps_df.iloc[:100],
+        data_df=caps_df.iloc,
         image_dir=args.image_dir,
         vocab=vocab,
         transform=transform,
@@ -66,12 +66,10 @@ def main(args):
         drop_last=False
     )
 
-    caps_df2 = caps_df.loc[caps_df.split == 'val'].iloc[:100]
-
     eval_loader = get_loader(
         decoding_level='word',
         split=['val'],
-        data_df=caps_df2.groupby('image_id').agg('first').reset_index(),
+        data_df=caps_df.groupby('image_id').agg('first').reset_index(),
         image_dir=args.image_dir,
         vocab=vocab,
         transform=transform,
