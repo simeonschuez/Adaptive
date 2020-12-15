@@ -9,6 +9,9 @@ from torch.nn import init
 
 #=======================Knowing When to Look===================
 class AttentiveCNN(nn.Module):
+    # TODO: add the location features - either here or in the Decoder
+    # where to add them? After the resnet; in v_g; in V?
+
     def __init__(self, embed_size, hidden_size):
         super(AttentiveCNN, self).__init__()
 
@@ -21,7 +24,9 @@ class AttentiveCNN(nn.Module):
         self.resnet_conv = resnet_conv
         self.avgpool = nn.AvgPool2d(7)
         self.affine_a = nn.Linear(2048, hidden_size) # v_i = W_a * A
-        self.affine_b = nn.Linear(2048, embed_size)  # v_g = W_b * a^g
+        # higher input dimension for self.affine_b
+        # because location features are concatenated to global image features
+        self.affine_b = nn.Linear(2048+7, embed_size)  # v_g = W_b * a^g
 
         # Dropout before affine transformation
         self.dropout = nn.Dropout(0.5)
@@ -36,7 +41,7 @@ class AttentiveCNN(nn.Module):
         self.affine_b.bias.data.fill_(0)
 
 
-    def forward(self, images):
+    def forward(self, images, location_features):
         '''
         Input: images
         Output: V=[v_1, ..., v_n], v_g
@@ -46,14 +51,21 @@ class AttentiveCNN(nn.Module):
         A = self.resnet_conv(images)
 
         # a^g, average pooling feature map
+        # global image feature vector
         a_g = self.avgpool(A)
         a_g = a_g.view(a_g.size(0), -1)
 
         # V = [v_1, v_2, ..., v_49]
+        # spatial image feature vector
         V = A.view(A.size(0), A.size(1), -1).transpose(1,2)
         V = F.relu(self.affine_a(self.dropout(V)))
 
-        v_g = F.relu(self.affine_b(self.dropout(a_g)))
+        # append location features to global image feature vector
+        a_g_loc = torch.cat(
+            (self.dropout(a_g), location_features), dim=1
+        )
+        # get global visual features
+        v_g = F.relu(self.affine_b(a_g_loc))
 
         return V, v_g
 
@@ -213,6 +225,10 @@ class AdaptiveBlock(nn.Module):
 
 # Caption Decoder
 class Decoder(nn.Module):
+
+    # TODO: Append location features - either here or in the encoder
+    # add location features to v_g, the visual input to the lstm?
+
     def __init__(self, embed_size, vocab_size, hidden_size):
         super(Decoder, self).__init__()
 
@@ -294,7 +310,7 @@ class Encoder2Decoder(nn.Module):
         self.decoder = Decoder(embed_size, vocab_size, hidden_size)
 
 
-    def forward(self, images, captions, lengths):
+    def forward(self, images, location_features, captions, lengths):
 
         # Data parallelism for V v_g encoder if multiple GPUs are available
         # V=[v_1, ..., v_k], v_g in the original paper
@@ -302,9 +318,9 @@ class Encoder2Decoder(nn.Module):
             device_ids = range(torch.cuda.device_count())
             encoder_parallel = torch.nn.DataParallel(self.encoder,
                                                      device_ids=device_ids)
-            V, v_g = encoder_parallel(images)
+            V, v_g = encoder_parallel(images, location_features)
         else:
-            V, v_g = self.encoder(images)
+            V, v_g = self.encoder(images, location_features)
 
         # Language Modeling on word prediction
         scores, _, _,_ = self.decoder(V, v_g, captions)
@@ -314,15 +330,15 @@ class Encoder2Decoder(nn.Module):
 
         return packed_scores
 
-    def init_sampler(self, images):
+    def init_sampler(self, images, location_features):
 
         # Data parallelism if multiple GPUs
         if torch.cuda.device_count() > 1:
             device_ids = range(torch.cuda.device_count())
             encoder_parallel = torch.nn.DataParallel(self.encoder, device_ids=device_ids)
-            V, v_g = encoder_parallel(images)
+            V, v_g = encoder_parallel(images, location_features)
         else:
-            V, v_g = self.encoder(images)
+            V, v_g = self.encoder(images, location_features)
 
         # Build the starting token Variable <start> (index 1): B x 1
         if torch.cuda.is_available():
@@ -334,7 +350,7 @@ class Encoder2Decoder(nn.Module):
 
 
     # Caption generator
-    def sampler(self, images, max_len=20):
+    def sampler(self, images, location_features, max_len=20):
         """
         Samples captions for given image features (Greedy search).
         """
@@ -343,9 +359,9 @@ class Encoder2Decoder(nn.Module):
         if torch.cuda.device_count() > 1:
             device_ids = range(torch.cuda.device_count())
             encoder_parallel = torch.nn.DataParallel(self.encoder, device_ids=device_ids)
-            V, v_g = encoder_parallel(images)
+            V, v_g = encoder_parallel(images, location_features)
         else:
-            V, v_g = self.encoder(images)
+            V, v_g = self.encoder(images, location_features)
 
         # Build the starting token Variable <start> (index 1): B x 1
         if torch.cuda.is_available():
