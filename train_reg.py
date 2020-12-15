@@ -139,11 +139,12 @@ def main(args):
 
         # Language Modeling Training
         print('------------------Training for Epoch %d----------------'%(epoch))
-        for i, (images, captions, positions, lengths, ann_ids, filenames) in enumerate(data_loader):
+        for i, (images, captions, location_features, lengths, ann_ids, filenames) in enumerate(data_loader):
 
             # Set mini-batch dataset
             images = to_var(images)
             captions = to_var(captions)
+            location_features = to_var(location_features)
             lengths = [cap_len - 1  for cap_len in lengths]
             targets = pack_padded_sequence(captions[:,1:], lengths, batch_first=True)[0]
 
@@ -151,7 +152,7 @@ def main(args):
             adaptive.train()
             adaptive.zero_grad()
 
-            packed_scores = adaptive(images, captions, lengths)
+            packed_scores = adaptive(images, location_features, captions, lengths)
 
             # Compute loss and backprop
             loss = LMcriterion(packed_scores[0], targets)
