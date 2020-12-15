@@ -1,8 +1,8 @@
 
 vocab_path='/home/simeon/Dokumente/Code/Uni/Repos/Adaptive/data/coco_vocab.pkl'
-image_dir='/home/simeon/Dokumente/Code/Data/COCO/'
-caption_path='/home/simeon/Dokumente/Code/Data/COCO/'
-splits_path='/home/simeon/Dokumente/Code/Data/COCO/splits/karpathy/caption_datasets/'
+image_dir='/home/simeon/Dokumente/Code/Uni/Repos/Adaptive/data/images/mscoco/'
+caption_path='/home/simeon/Dokumente/Code/Uni/Repos/Adaptive/data/captions/annotations/'
+splits_path='/home/simeon/Dokumente/Code/Uni/Repos/Adaptive/data/splits/'
 batch_size=60
 eval_size=28
 model_name='adaptive-captions'

@@ -236,13 +236,13 @@ if __name__ == '__main__':
                         help='size for randomly cropping images')
     parser.add_argument('--vocab_path', type=str, default='./data/coco_vocab.pkl',
                         help='path for vocabulary wrapper')
-    parser.add_argument('--image_dir', type=str, default='/home/simeon/Dokumente/Code/Data/COCO/',
+    parser.add_argument('--image_dir', type=str, default='.data/images/mscoco/',
                         help='directory for training images')
     parser.add_argument('--caption_path', type=str,
-                        default='/home/simeon/Dokumente/Code/Data/COCO/',
+                        default='.data/captions/',
                         help='path for caption annotations')
     parser.add_argument('--splits_path', type=str,
-                        default='/home/simeon/Dokumente/Code/Data/COCO/splits/karpathy/caption_datasets/',
+                        default='.data/splits/karpathy/caption_datasets/',
                         help='path to karpathy splits')
     parser.add_argument('--log_step', type=int, default=10,
                         help='step size for printing log info')

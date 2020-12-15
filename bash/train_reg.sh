@@ -1,7 +1,7 @@
 
 vocab_path='/home/simeon/Dokumente/Code/Uni/Repos/Adaptive/data/refcoco_vocab.pkl'
-image_dir='/home/simeon/Dokumente/Code/Data/COCO/'
-refcoco_path='/home/simeon/Dokumente/Code/Data/RefCOCO/refcoco/'
+image_dir='/home/simeon/Dokumente/Code/Uni/Repos/Adaptive/data/images/mscoco/'
+refcoco_path='/home/simeon/Dokumente/Code/Uni/Repos/Adaptive/data/refcoco/'
 batch_size=60
 eval_size=28
 model_name='adaptive-refcoco'

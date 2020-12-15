@@ -239,10 +239,10 @@ if __name__ == '__main__':
                         help='size for randomly cropping images')
     parser.add_argument('--vocab_path', type=str, default='./data/refcoco_vocab.pkl',
                         help='path for vocabulary wrapper')
-    parser.add_argument('--image_dir', type=str, default='/home/simeon/Dokumente/Code/Data/COCO/',
+    parser.add_argument('--image_dir', type=str, default='./data/images/mscoco/',
                         help='directory for training images')
     parser.add_argument('--refcoco_path', type=str,
-                        default='/home/simeon/Dokumente/Code/Data/RefCOCO/refcoco/',
+                        default='.data/refcoco/',
                         help='path for caption annotations')
     parser.add_argument('--log_step', type=int, default=10,
                         help='step size for printing log info')
