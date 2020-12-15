@@ -21,7 +21,7 @@ import logging
 def main(args):
 
     # set up logging
-    log_file = os.path.join(args.model_path, 'model_training.log')
+    log_file = os.path.join(args.model_path, args.model_name+'_training.log')
     logging.basicConfig(
         filename=log_file, level=logging.DEBUG)
     # To reproduce training results
@@ -183,7 +183,7 @@ def main(args):
         # Save the Adaptive Attention model after each epoch
         print("Save Torch model ...")
         torch.save(adaptive.state_dict(),
-                   os.path.join(args.model_path, 'adaptive-refcoco-%d.pkl'%(epoch)))
+                   os.path.join(args.model_path, args.model_name+'-%d.pkl'%(epoch)))
 
 
         # Evaluation on validation set
@@ -237,18 +237,17 @@ if __name__ == '__main__':
                          help='path for saving trained models')
     parser.add_argument('--crop_size', type=int, default=224,
                         help='size for randomly cropping images')
-    parser.add_argument('--vocab_path', type=str, default='./data/coco_vocab.pkl',
+    parser.add_argument('--vocab_path', type=str, default='./data/refcoco_vocab.pkl',
                         help='path for vocabulary wrapper')
     parser.add_argument('--image_dir', type=str, default='/home/simeon/Dokumente/Code/Data/COCO/',
                         help='directory for training images')
     parser.add_argument('--refcoco_path', type=str,
-                        default='/home/simeon/Dokumente/Code/Data/COCO/',
+                        default='/home/simeon/Dokumente/Code/Data/RefCOCO/refcoco/',
                         help='path for caption annotations')
-    parser.add_argument('--caption_val_path', type=str,
-                        default='./data/annotations/karpathy_split_val.json',
-                        help='path for validation annotation json file')
     parser.add_argument('--log_step', type=int, default=10,
                         help='step size for printing log info')
+    parser.add_argument('--model_name', type=str, default='adaptive-refcoco',
+                        help='model name for file output')
     parser.add_argument('--seed', type=int, default=123,
                         help='random seed for model reproduction')
 

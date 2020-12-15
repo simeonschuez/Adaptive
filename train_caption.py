@@ -21,7 +21,7 @@ import logging
 def main(args):
 
     # set up logging
-    log_file = os.path.join(args.model_path, 'model_training.log')
+    log_file = os.path.join(args.model_path, args.model_name+'_training.log')
     logging.basicConfig(
         filename=log_file, level=logging.DEBUG)
     # To reproduce training results
@@ -185,7 +185,7 @@ def main(args):
         # Save the Adaptive Attention model after each epoch
         print("Save Torch model ...")
         torch.save(adaptive.state_dict(),
-                   os.path.join(args.model_path, 'adaptive-%d.pkl'%(epoch)))
+                   os.path.join(args.model_path, args.model_name+'-%d.pkl'%(epoch)))
 
 
         # Evaluation on validation set
@@ -246,11 +246,10 @@ if __name__ == '__main__':
     parser.add_argument('--splits_path', type=str,
                         default='/home/simeon/Dokumente/Code/Data/COCO/splits/karpathy/caption_datasets/',
                         help='path to karpathy splits')
-    parser.add_argument('--caption_val_path', type=str,
-                        default='./data/annotations/karpathy_split_val.json',
-                        help='path for validation annotation json file')
     parser.add_argument('--log_step', type=int, default=10,
                         help='step size for printing log info')
+    parser.add_argument('--model_name', type=str, default='adaptive-captions',
+                        help='model name for file output')
     parser.add_argument('--seed', type=int, default=123,
                         help='random seed for model reproduction')
 
