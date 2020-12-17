@@ -115,6 +115,9 @@ def get_refcoco_captions(path):
         instances = pd.DataFrame(instances['annotations']).set_index('id')
 
     filepath = os.path.join(path, 'refs(unc).p')
+    # change path for refcocog
+    if 'refcocog' in filepath and not os.path.isfile(filepath):
+        filepath = os.path.join(path, 'refs(umd).p')
     captions = pd.read_pickle(filepath)
     captions = split_sentences(pd.DataFrame(captions))
 
@@ -132,7 +135,9 @@ def refcoco_splits(path):
     """
     captions = get_refcoco_captions(path)
 
-    # partitions: ['train', 'testB', 'testA', 'val']
+    # partitions:
+    #   ['train', 'testB', 'testA', 'val'] for refcoco / refcoco+
+    #   ['train', 'test', 'val'] for refcocog
     partitions = list(pd.unique(captions.split))
 
     image_ids, caption_ids = {}, {}
