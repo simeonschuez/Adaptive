@@ -49,7 +49,7 @@ def main(args):
     # Build data loader for training and evaluation
 
     ref_df = refcoco_splits(
-        caps_path=args.refcoco_path
+        args.refcoco_path
         )[0]
 
     data_loader = get_loader(
@@ -242,7 +242,7 @@ if __name__ == '__main__':
     parser.add_argument('--image_dir', type=str, default='./data/images/mscoco/',
                         help='directory for training images')
     parser.add_argument('--refcoco_path', type=str,
-                        default='.data/refcoco/',
+                        default='./data/refcoco/',
                         help='path for caption annotations')
     parser.add_argument('--log_step', type=int, default=10,
                         help='step size for printing log info')
