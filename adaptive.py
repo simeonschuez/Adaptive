@@ -269,15 +269,7 @@ class Decoder(nn.Module):
         cells = cells.transpose(0, 1)
 
         # Data parallelism for adaptive attention block
-        if torch.cuda.device_count() > 1:
-            device_ids = range(torch.cuda.device_count())
-            adaptive_block_parallel = nn.DataParallel(self.adaptive,
-                                                      device_ids=device_ids)
-
-            scores, atten_weights, beta = adaptive_block_parallel(x, hiddens,
-                                                                  cells, V)
-        else:
-            scores, atten_weights, beta = self.adaptive(x, hiddens, cells, V)
+        scores, atten_weights, beta = self.adaptive(x, hiddens, cells, V)
 
         # Return states for Caption Sampling purpose
         return scores, states, atten_weights, beta
@@ -298,13 +290,7 @@ class Encoder2Decoder(nn.Module):
 
         # Data parallelism for V v_g encoder if multiple GPUs are available
         # V=[v_1, ..., v_k], v_g in the original paper
-        if torch.cuda.device_count() > 1:
-            device_ids = range(torch.cuda.device_count())
-            encoder_parallel = torch.nn.DataParallel(self.encoder,
-                                                     device_ids=device_ids)
-            V, v_g = encoder_parallel(images)
-        else:
-            V, v_g = self.encoder(images)
+        V, v_g = self.encoder(images)
 
         # Language Modeling on word prediction
         scores, _, _,_ = self.decoder(V, v_g, captions)
@@ -317,12 +303,7 @@ class Encoder2Decoder(nn.Module):
     def init_sampler(self, images):
 
         # Data parallelism if multiple GPUs
-        if torch.cuda.device_count() > 1:
-            device_ids = range(torch.cuda.device_count())
-            encoder_parallel = torch.nn.DataParallel(self.encoder, device_ids=device_ids)
-            V, v_g = encoder_parallel(images)
-        else:
-            V, v_g = self.encoder(images)
+        V, v_g = self.encoder(images)
 
         # Build the starting token Variable <start> (index 1): B x 1
         if torch.cuda.is_available():
@@ -340,12 +321,7 @@ class Encoder2Decoder(nn.Module):
         """
 
         # Data parallelism if multiple GPUs
-        if torch.cuda.device_count() > 1:
-            device_ids = range(torch.cuda.device_count())
-            encoder_parallel = torch.nn.DataParallel(self.encoder, device_ids=device_ids)
-            V, v_g = encoder_parallel(images)
-        else:
-            V, v_g = self.encoder(images)
+        V, v_g = self.encoder(images)
 
         # Build the starting token Variable <start> (index 1): B x 1
         if torch.cuda.is_available():
