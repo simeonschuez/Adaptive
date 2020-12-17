@@ -55,7 +55,12 @@ def build_vocab(caption_list, threshold):
     return vocab
 
 
-def main(coco_threshold, refcoco_threshold, splits_path, caps_path, refcoco_path, out_dir):
+def main(
+    coco_threshold, refcoco_threshold,
+    splits_path, caps_path,
+    refcoco_path, refcocoplus_path,
+    refcocog_path, out_dir
+        ):
 
     # create vocab directory if it doesn't exist
     if not os.path.isdir(out_dir):
@@ -63,7 +68,6 @@ def main(coco_threshold, refcoco_threshold, splits_path, caps_path, refcoco_path
         os.makedirs(out_dir)
 
     print('generate vocab for coco captions')
-
     caps_df = get_karpathy_split(splits_path=splits_path, caps_path=caps_path)
     train_caps = caps_df.loc[caps_df.split == 'train'].caption.to_list()
     vocab = build_vocab(train_caps, coco_threshold)
@@ -81,14 +85,33 @@ def main(coco_threshold, refcoco_threshold, splits_path, caps_path, refcoco_path
         pickle.dump(vocab, f)
         print('saved vocab with size {} to {}.'.format(len(vocab), out_path))
 
+    print('generate vocab for refcoco+')
+    reg_df = get_refcoco_captions(refcocoplus_path)
+    train_caps = reg_df.loc[reg_df.split == 'train'].caption.to_list()
+    vocab = build_vocab(train_caps, refcoco_threshold)
+    out_path = os.path.join(out_dir, 'refcocoplus_vocab.pkl')
+    with open(out_path, 'wb') as f:
+        pickle.dump(vocab, f)
+        print('saved vocab with size {} to {}.'.format(len(vocab), out_path))
+
+    print('generate vocab for refcocog')
+    reg_df = get_refcoco_captions(refcocog_path)
+    train_caps = reg_df.loc[reg_df.split == 'train'].caption.to_list()
+    vocab = build_vocab(train_caps, refcoco_threshold)
+    out_path = os.path.join(out_dir, 'refcocog_vocab.pkl')
+    with open(out_path, 'wb') as f:
+        pickle.dump(vocab, f)
+        print('saved vocab with size {} to {}.'.format(len(vocab), out_path))
 
 if __name__ == '__main__':
 
     main(
         coco_threshold=5,
         refcoco_threshold=3,
-        splits_path='/home/simeon/Dokumente/Code/Data/COCO/splits/karpathy/caption_datasets/',
-        caps_path='/home/simeon/Dokumente/Code/Data/COCO/',
-        refcoco_path='/home/simeon/Dokumente/Code/Data/RefCOCO/refcoco/',
+        splits_path='./data/splits/karpathy/caption_datasets/',
+        caps_path='./data/captions/',
+        refcoco_path='./data/refcoco/',
+        refcocoplus_path='./data/refcoco+/',
+        refcocog_path='./data/refcocog/',
         out_dir='/home/simeon/Dokumente/Code/Uni/Repos/Adaptive/data/'
     )

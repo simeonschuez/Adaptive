@@ -1,10 +1,10 @@
 
 vocab_path='./data/refcoco_vocab.pkl'
 image_dir='./data/images/mscoco/'
-refcoco_path='./data/refcoco/'
+refcoco_path='./data/refcoco+/'
 batch_size=60
 eval_size=28
-model_name='adaptive-refcoco'
+model_name='adaptive-refcocoplus'
 
 cd ..
 
