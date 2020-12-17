@@ -92,6 +92,7 @@ def eval_reg_model(model, vocab, eval_data_loader, eval_df):
     for i, (images, _, location_features, _, ann_ids, _) in enumerate(eval_data_loader):
 
         images = to_var(images)
+        location_features = to_var(location_features)
         generated_captions, _, _ = model.sampler(images, location_features)
 
         if torch.cuda.is_available():
