@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=train_captioning_model
-#SBATCH --partition=gpu_test
-#SBATCH --time=50:00:00
+#SBATCH --partition=gpu_p100
+#SBATCH --time=80:00:00
 #SBATCH --gres=gpu:1
 #SBATCH --mem=64G
 

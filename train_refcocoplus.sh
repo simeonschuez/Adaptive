@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=train_refcocoplus_model
-#SBATCH --partition=gpu_test
+#SBATCH --partition=gpu_p100
 #SBATCH --time=25:00:00
 #SBATCH --gres=gpu:1
 #SBATCH --mem=64G
