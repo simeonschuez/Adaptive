@@ -348,93 +348,78 @@ class RefCOCOClusters():
         for objects in an image given an image id
     """
 
-    def __init__(self, decoding_level, list_IDs,
-                 data_df, image_dir, vocab, transform):
+    def __init__(
+        self, split, data_df, image_dir, vocab,
+        decoding_level='word', transform=None
+    ):
 
         # initialize dataset wrapper
         self.dataset = RefCOCODataset(
-            decoding_level=decoding_level, list_IDs=list_IDs, data_df=data_df,
-            image_dir=image_dir, vocab=vocab, transform=transform
+            split=split,
+            data_df=data_df,
+            image_dir=image_dir,
+            vocab=vocab,
+            decoding_level=decoding_level,
+            transform=transform
         )
+
+        # set self.df: DataFrame containing unique objects only
+        # (no duplicate ann_ids)
+        data_df = data_df.reset_index()\
+            .groupby('ann_id').first()\
+            .set_index('sent_id').sort_values('sent_id')
+        self.df = data_df.loc[data_df.split.isin(split)]
+
+    def __len__(self):
+        """Denotes the total number of samples"""
+        return len(self.df.index)
 
     def __getitem__(self, index):
         """
             ::input:: index for cluster in self.image_clusters
             ::output:: sent_ids, image_ids and image data for that cluster
         """
-        # retrieve indices in id list, caption ids and image ids for entries in cluster
-        id_list_idx,sent_ids = self.get_distractors(index)
+        # retrieve indices in id list, caption ids
+        # and image ids for entries in cluster
+        id_list_idx, sent_ids = self.get_target_distractors(index)
+
         # retrieve image data from self.dataset for the given indices
         image_data = [self.dataset[i] for i in id_list_idx]
+
         # unpack image data
         images = [entry[0] for entry in image_data]
-        pos_infs = [entry[2] for entry in image_data]
+        targets = [entry[1] for entry in image_data]
+        positions = [entry[2] for entry in image_data]
+        ann_ids = [entry[4] for entry in image_data]
+        filenames = [entry[5] for entry in image_data]
 
-        return list(zip(sent_ids, images, pos_infs))
+        return sent_ids, ann_ids, images, positions, targets, filenames
 
-    def image_entities(self, img_id):
-        """
-            ::input:: image_id
-            ::output:: sent_ids and image data for objects in image
-        """
-        df = self.dataset.df
-        df = df.reset_index()
-        # get entries in image
-        image_entries = df.loc[df.image_id == img_id]
-        # get first sent_id for every object in image
-        sent_ids = image_entries.reset_index()\
-            .groupby('ann_id')\
-            .agg('first')\
-            .sent_id.to_list()
-
-        # get position from sent_ids in dataset id list
-        # (used for retrieving entries from dataset wrapper)
-        ids_idx = [
-            i for i, c_id in enumerate(self.dataset.list_IDs)
-            if c_id in sent_ids
-            ]
-
-        # retrieve image data from self.dataset for the given indices
-        image_data = [self.dataset[i] for i in ids_idx]
-        # unpack image data
-        images = [entry[0] for entry in image_data]
-        pos_infs = [entry[2] for entry in image_data]
-
-        return list(zip(sent_ids, images, pos_infs))
-
-    def get_distractors(self, i):
+    def get_target_distractors(self, i):
         """
             ::input:: id for target object
             ::output:: sent_ids and positions in dataset id list
                        for target and distractors in same image
         """
 
-        df = self.dataset.df
-        # get target entry
-        target = df.loc[self.dataset.list_IDs[i]]
-        target_id = target.name
-
-        # get image_id from target entry
+        # get target information
+        target = self.df.iloc[i]
+        target_sent_id = target.name
         image_id = target.image_id
+
         # get entries in same image
-        image_entries = df.loc[df.image_id == image_id]
+        image_entries = self.df.loc[self.df.image_id == image_id]
 
-        # get first sent_id for every distractor object in image
-
-        distractor_ids = image_entries.reset_index()\
-            .groupby('ann_id')\
-            .agg('first').drop(target.ann_id)\
-            .sent_id.to_list()
+        # get sent_id for every (unique) distractor object in image
+        distractor_sent_ids = image_entries.drop(target_sent_id)\
+            .index.to_list()
 
         # combine target and distractor ids
-        sent_ids = [target_id] + distractor_ids
+        sent_ids = [target_sent_id] + distractor_sent_ids
 
         # get position from sent_ids in dataset id list
         # (used for retrieving entries from dataset wrapper)
-        ids_idx = [
-            i for i, c_id in enumerate(self.dataset.list_IDs)
-            if c_id in sent_ids
-            ]
+        ids_idx = [self.dataset.list_IDs.index(i) for i in sent_ids]
 
         return(ids_idx, sent_ids)
 
@@ -442,21 +427,6 @@ class RefCOCOClusters():
 ################
 # util functions
 ################
-
-
-def iterate_targets(lst):
-    """
-    set every entry in lst as target once
-    use other entries as distractors
-    """
-    for i in range(len(lst)):
-        # get target + distractors at current step
-        target = lst[i]
-        distractors = lst[:i] + lst[i+1:]
-
-        # return items in current order
-        yield [target] + distractors
-
 
 def caption_to_word_id(caption, vocab):
     """ create target array with ids from vocabulary for words in caption """
