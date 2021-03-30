@@ -44,6 +44,8 @@ class DSet(data.Dataset):
         self.transform = transform
         self.decoding_level = decoding_level
 
+        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
     def __len__(self):
         """Denotes the total number of samples"""
         return len(self.list_IDs)
